@@ -3,9 +3,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
- * Клас BasicDataOperationsUsingList реалізує операції з колекціями типу ArrayList для даних LocalDateTime.
+ * Клас BasicDataOperationsUsingList реалізує операції з колекціями типу ArrayList для даних LocalDateTime
+ * з використанням лямбда-виразів і Stream API.
  * 
  * <p>Методи класу:</p>
  * <ul>
@@ -81,7 +84,10 @@ public class BasicDataOperationsUsingList {
     void performArraySorting() {
         long timeStart = System.nanoTime();
 
-        Arrays.sort(dateTimeArray);
+        // sorted() - проміжна операція, toArray() збирає елементи потоку в новий масив
+        dateTimeArray = Arrays.stream(dateTimeArray)
+                .sorted()
+                .toArray(LocalDateTime[]::new);
         arraySorted = true;
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування масиву LocalDateTime[]");
@@ -95,16 +101,15 @@ public class BasicDataOperationsUsingList {
         String operationName = "пошук елемента '" + dateTimeValueToSearch + "' в масивi LocalDateTime[], " + (arraySorted ? "після сортування" : "до сортування");
         long timeStart = System.nanoTime();
 
-        int position = -1;
+        int position;
         if (arraySorted) {
             position = Arrays.binarySearch(dateTimeArray, dateTimeValueToSearch);
         } else {
-            for (int i = 0; i < dateTimeArray.length; i++) {
-                if (dateTimeArray[i].compareTo(dateTimeValueToSearch) == 0) {
-                    position = i;
-                    break;
-                }
-            }
+            // потік індексів масиву: findFirst() зупиняє перебір на першому збігу
+            position = IntStream.range(0, dateTimeArray.length)
+                    .filter(index -> dateTimeArray[index].compareTo(dateTimeValueToSearch) == 0)
+                    .findFirst()
+                    .orElse(-1);
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -129,21 +134,21 @@ public class BasicDataOperationsUsingList {
         String operationName = "визначення мiнiмальної i максимальної дати в масивi LocalDateTime[], " + (arraySorted ? "після сортування" : "до сортування");
         long timeStart = System.nanoTime();
 
-        LocalDateTime minValue = dateTimeArray[0];
-        LocalDateTime maxValue = dateTimeArray[0];
+        LocalDateTime minValue;
+        LocalDateTime maxValue;
 
         if (arraySorted) {
             // у відсортованому масиві граничні значення лежать на його кінцях
+            minValue = dateTimeArray[0];
             maxValue = dateTimeArray[dateTimeArray.length - 1];
         } else {
-            for (LocalDateTime currentDateTime : dateTimeArray) {
-                if (currentDateTime.isBefore(minValue)) {
-                    minValue = currentDateTime;
-                }
-                if (currentDateTime.isAfter(maxValue)) {
-                    maxValue = currentDateTime;
-                }
-            }
+            // min() і max() повертають Optional<LocalDateTime>; масив не порожній, тому значення є
+            minValue = Arrays.stream(dateTimeArray)
+                    .min(LocalDateTime::compareTo)
+                    .orElseThrow();
+            maxValue = Arrays.stream(dateTimeArray)
+                    .max(LocalDateTime::compareTo)
+                    .orElseThrow();
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -160,18 +165,16 @@ public class BasicDataOperationsUsingList {
         String operationName = "пошук елемента '" + dateTimeValueToSearch + "' в ArrayList<LocalDateTime>, " + (listSorted ? "після сортування" : "до сортування");
         long timeStart = System.nanoTime();
 
-        int position = -1;
+        int position;
         if (listSorted) {
             position = Collections.binarySearch(dateTimeList, dateTimeValueToSearch);
         } else {
-            int index = 0;
-            for (LocalDateTime value : dateTimeList) {
-                if (value.compareTo(dateTimeValueToSearch) == 0) {
-                    position = index;
-                    break;
-                }
-                index++;
-            }
+            // takeWhile() пропускає елементи до першого збігу, count() рахує їх:
+            // кількість елементів перед шуканим і є його позицією
+            long elementsBeforeMatch = dateTimeList.stream()
+                    .takeWhile(dateTime -> dateTime.compareTo(dateTimeValueToSearch) != 0)
+                    .count();
+            position = elementsBeforeMatch < dateTimeList.size() ? (int) elementsBeforeMatch : -1;
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -204,8 +207,13 @@ public class BasicDataOperationsUsingList {
             minValue = dateTimeList.get(0);
             maxValue = dateTimeList.get(dateTimeList.size() - 1);
         } else {
-            minValue = Collections.min(dateTimeList);
-            maxValue = Collections.max(dateTimeList);
+            // min() і max() повертають Optional<LocalDateTime>; список не порожній, тому значення є
+            minValue = dateTimeList.stream()
+                    .min(LocalDateTime::compareTo)
+                    .orElseThrow();
+            maxValue = dateTimeList.stream()
+                    .max(LocalDateTime::compareTo)
+                    .orElseThrow();
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -221,7 +229,10 @@ public class BasicDataOperationsUsingList {
     void sortList() {
         long timeStart = System.nanoTime();
 
-        Collections.sort(dateTimeList);
+        // Collectors.toCollection(ArrayList::new) збирає відсортований потік у новий ArrayList
+        dateTimeList = dateTimeList.stream()
+                .sorted()
+                .collect(Collectors.toCollection(ArrayList::new));
         listSorted = true;
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування ArrayList<LocalDateTime>");
@@ -237,47 +248,25 @@ public class BasicDataOperationsUsingList {
         // назву операції будуємо до заміру, щоб склеювання рядка не потрапило у вимір
         String operationName = "вибірка даних: масив LocalDateTime[], " + phase + ", умова: " + conditionDescription;
         long timeStart = System.nanoTime();
-        LocalDateTime[] matches = new LocalDateTime[values.length];
-        int count = 0;
-        int inspected = 0;
+        LocalDateTime[] matches;
         if (!sorted) {
-            // Невпорядковані дані: перевіряємо кожне входження.
-            for (LocalDateTime value : values) {
-                inspected++;
-                if (!value.isBefore(lower) && !value.isAfter(upper)) matches[count++] = value;
-            }
+            // Невпорядковані дані: filter() перевіряє кожне входження.
+            matches = Arrays.stream(values)
+                    .filter(value -> !value.isBefore(lower) && !value.isAfter(upper))
+                    .toArray(LocalDateTime[]::new);
         } else {
-            // Етап 1. Бінарним пошуком знаходимо перший елемент, не менший за нижню межу.
-            // Масив упорядкований, тому спочатку йдуть елементи, менші за lower, а після них решта.
-            // Шукаємо індекс, де закінчується перша частина, і з кожним кроком
-            // удвічі звужуємо проміжок [low; high), у якому цей індекс може бути.
-            int low = 0;
-            int high = values.length;
-            while (low < high) {
-                // середина проміжку; зсув >>> 1 ділить на 2 без переповнення int
-                int mid = (low + high) >>> 1;
-                inspected++;
-                // values[mid] < lower: шуканий індекс лежить правіше mid, тож відкидаємо ліву половину разом із mid;
-                // інакше values[mid] може бути шуканим, тож лишаємо mid і відкидаємо праву половину
-                if (values[mid].isBefore(lower)) low = mid + 1; else high = mid;
-            }
-            // Тепер low == high: це перший елемент >= lower (або values.length, якщо таких немає).
-            // Знадобилось близько log2(n) порівнянь замість перегляду всіх менших елементів.
-
-            // Етап 2. Від нижньої межі йдемо вправо до першого елемента, більшого за верхню межу.
-            // Усі елементи до нього вже >= lower, тому окремо перевіряти нижню межу не треба.
-            for (int i = low; i < values.length; i++) {
-                LocalDateTime value = values[i];
-                inspected++;
-                // далі всі елементи ще більші, тож решту масиву можна не переглядати
-                if (value.isAfter(upper)) break;
-                matches[count++] = value;
-            }
+            // Впорядковані дані: dropWhile() відкидає початкові значення, менші за lower,
+            // а takeWhile() зупиняє потік на першому значенні, більшому за upper,
+            // тож решта масиву не переглядається.
+            matches = Arrays.stream(values)
+                    .dropWhile(value -> value.isBefore(lower))
+                    .takeWhile(value -> !value.isAfter(upper))
+                    .toArray(LocalDateTime[]::new);
         }
         PerformanceTracker.displayOperationTime(timeStart, operationName);
         // Друк результатів не входить у виміряний час пошуку.
-        System.out.println("Переглянуто елементів: " + inspected);
-        for (int i = 0; i < count; i++) System.out.println(matches[i]);
+        Arrays.stream(matches).forEach(System.out::println);
+        int count = matches.length;
         System.out.println("У масиві знайдено " + count + " входжень (повтори враховано). Умова: " + conditionDescription + ".");
         return count;
     }
@@ -291,49 +280,25 @@ public class BasicDataOperationsUsingList {
         // назву операції будуємо до заміру, щоб склеювання рядка не потрапило у вимір
         String operationName = "вибірка даних: ArrayList<LocalDateTime>, " + phase + ", умова: " + conditionDescription;
         long timeStart = System.nanoTime();
-        LocalDateTime[] matches = new LocalDateTime[values.size()];
-        int count = 0;
-        int inspected = 0;
+        List<LocalDateTime> matches;
         if (!sorted) {
-            // Невпорядковані дані: перевіряємо кожне входження.
-            for (LocalDateTime value : values) {
-                inspected++;
-                if (!value.isBefore(lower) && !value.isAfter(upper)) matches[count++] = value;
-            }
+            // Невпорядковані дані: filter() перевіряє кожне входження.
+            matches = values.stream()
+                    .filter(value -> !value.isBefore(lower) && !value.isAfter(upper))
+                    .toList();
         } else {
-            // Етап 1. Бінарним пошуком знаходимо перший елемент, не менший за нижню межу.
-            // Список упорядкований, тому спочатку йдуть елементи, менші за lower, а після них решта.
-            // Шукаємо індекс, де закінчується перша частина, і з кожним кроком
-            // удвічі звужуємо проміжок [low; high), у якому цей індекс може бути.
-            // Доступ get(mid) швидкий (O(1)) лише для ArrayList; для LinkedList він повільний.
-            int low = 0;
-            int high = values.size();
-            while (low < high) {
-                // середина проміжку; зсув >>> 1 ділить на 2 без переповнення int
-                int mid = (low + high) >>> 1;
-                inspected++;
-                // values.get(mid) < lower: шуканий індекс лежить правіше mid, тож відкидаємо ліву половину разом із mid;
-                // інакше values.get(mid) може бути шуканим, тож лишаємо mid і відкидаємо праву половину
-                if (values.get(mid).isBefore(lower)) low = mid + 1; else high = mid;
-            }
-            // Тепер low == high: це перший елемент >= lower (або values.size(), якщо таких немає).
-            // Знадобилось близько log2(n) порівнянь замість перегляду всіх менших елементів.
-
-            // Етап 2. Від нижньої межі йдемо вправо до першого елемента, більшого за верхню межу.
-            // Усі елементи до нього вже >= lower, тому окремо перевіряти нижню межу не треба.
-            java.util.ListIterator<LocalDateTime> cursor0 = values.listIterator(low);
-            while (cursor0.hasNext()) {
-                LocalDateTime value = cursor0.next();
-                inspected++;
-                // далі всі елементи ще більші, тож решту списку можна не переглядати
-                if (value.isAfter(upper)) break;
-                matches[count++] = value;
-            }
+            // Впорядковані дані: dropWhile() відкидає початкові значення, менші за lower,
+            // а takeWhile() зупиняє потік на першому значенні, більшому за upper,
+            // тож решта списку не переглядається.
+            matches = values.stream()
+                    .dropWhile(value -> value.isBefore(lower))
+                    .takeWhile(value -> !value.isAfter(upper))
+                    .toList();
         }
         PerformanceTracker.displayOperationTime(timeStart, operationName);
         // Друк результатів не входить у виміряний час пошуку.
-        System.out.println("Переглянуто елементів: " + inspected);
-        for (int i = 0; i < count; i++) System.out.println(matches[i]);
+        matches.forEach(System.out::println);
+        int count = matches.size();
         System.out.println("У List знайдено " + count + " входжень (повтори враховано). Умова: " + conditionDescription + ".");
         return count;
     }

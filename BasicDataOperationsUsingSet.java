@@ -1,11 +1,11 @@
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Клас BasicDataOperationsUsingSet реалізує операції з множиною HashSet для LocalDateTime.
+ * Клас BasicDataOperationsUsingSet реалізує операції з множиною HashSet для LocalDateTime
+ * з використанням лямбда-виразів і Stream API.
  *
  * <p>Методи класу:</p>
  * <ul>
@@ -43,8 +43,9 @@ public class BasicDataOperationsUsingSet {
         analyzeDuplicates();
 
         // зберігаємо до файлу відсортовані унікальні значення з HashSet (без повторів)
-        LocalDateTime[] sortedSetValues = dateTimeSet.toArray(new LocalDateTime[0]);
-        Arrays.sort(sortedSetValues);
+        LocalDateTime[] sortedSetValues = dateTimeSet.stream()
+                .sorted()
+                .toArray(LocalDateTime[]::new);
         DataFileHandler.writeArrayToFile(sortedSetValues, BasicDataOperations.SORTED_FILE_PREFIX + ".set.data");
     }
 
@@ -56,11 +57,10 @@ public class BasicDataOperationsUsingSet {
         String operationName = "пошук елемента '" + dateTimeValueToSearch + "' в HashSet<LocalDateTime>";
         long timeStart = System.nanoTime();
 
-        // HashSet не перебирає елементи. contains() обчислює hashCode() шуканої дати,
-        // за ним одразу визначає «кошик» (bucket) внутрішньої хеш-таблиці і через equals()
-        // порівнює лише ті кілька елементів, що потрапили в цей кошик.
-        // У середньому це O(1) незалежно від кількості елементів.
-        boolean elementExists = this.dateTimeSet.contains(dateTimeValueToSearch);
+        // anyMatch() перебирає елементи потоку, доки предикат не поверне true: це лінійний
+        // пошук, O(n). Метод contains() знайшов би елемент HashSet без перебору, за O(1).
+        boolean elementExists = dateTimeSet.stream()
+                .anyMatch(dateTime -> dateTime.equals(dateTimeValueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
 
@@ -83,10 +83,15 @@ public class BasicDataOperationsUsingSet {
         long timeStart = System.nanoTime();
 
         // HashSet розкладає елементи за хеш-кодами, а не за порядком дат, тому найменша
-        // і найбільша дати можуть лежати будь-де. Collections.min() і Collections.max()
-        // обходять усю множину ітератором і порівнюють елементи через compareTo(); кожен виклик O(n).
-        LocalDateTime minValue = Collections.min(dateTimeSet);
-        LocalDateTime maxValue = Collections.max(dateTimeSet);
+        // і найбільша дати можуть лежати будь-де. min() і max() - термінальні операції:
+        // кожна обходить увесь потік і порівнює елементи через compareTo(), O(n).
+        // Результат - Optional<LocalDateTime>; множина не порожня, тому значення є.
+        LocalDateTime minValue = dateTimeSet.stream()
+                .min(LocalDateTime::compareTo)
+                .orElseThrow();
+        LocalDateTime maxValue = dateTimeSet.stream()
+                .max(LocalDateTime::compareTo)
+                .orElseThrow();
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в HashSet<LocalDateTime>");
 

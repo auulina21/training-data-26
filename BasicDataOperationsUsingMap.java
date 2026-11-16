@@ -1,22 +1,21 @@
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 /**
- * Клас BasicDataOperationsUsingMap реалізує операції з колекціями типу Map для зберігання пар ключ-значення.
+ * Клас BasicDataOperationsUsingMap реалізує операції з колекціями типу Map для зберігання пар ключ-значення
+ * з використанням лямбда-виразів і Stream API.
  *
  * <p>Ключ - record {@link Oak} з характеристиками дуба, значення - місце зростання дуба.</p>
  *
  * <p>Операції, які виконуються для кожного типу Map:</p>
  * <ul>
  *   <li>пошук за ключем;</li>
- *   <li>пошук за значенням (сортування списку пар + binarySearch);</li>
+ *   <li>пошук за значенням (filter() + findFirst());</li>
  *   <li>виведення пар ключ-значення на консоль до і після сортування;</li>
  *   <li>сортування за ключами;</li>
  *   <li>визначення найменшого й найбільшого ключа;</li>
@@ -31,12 +30,6 @@ public class BasicDataOperationsUsingMap {
 
     private static final String VALUE_TO_SEARCH_AND_DELETE = "Софіївка";
     private static final String VALUE_TO_ADD = "Тростянець";
-
-    /**
-     * Компаратор для сортування Map.Entry за значеннями String (місцем зростання).
-     * Використовує природний порядок рядків - String.compareTo().
-     */
-    private static final Comparator<Map.Entry<Oak, String>> CUSTOM_COMPARATOR = Map.Entry.comparingByValue();
 
     private HashMap<Oak, String> hashMap;
     private TreeMap<Oak, String> treeMap;
@@ -79,7 +72,7 @@ public class BasicDataOperationsUsingMap {
          * <p>Метод використовується:</p>
          * <ul>
          *   <li>TreeMap - для автоматичного впорядкування ключів;</li>
-         *   <li>Collections.sort() - для сортування списку ключів.</li>
+         *   <li>sorted(Map.Entry.comparingByKey()) - для сортування потоку пар за ключами.</li>
          * </ul>
          *
          * <p>Метод узгоджений з equals(): compareTo() повертає 0 тоді й лише тоді,
@@ -180,16 +173,15 @@ public class BasicDataOperationsUsingMap {
         System.out.println("\n=== Пари ключ-значення в HashMap ===");
         long timeStart = System.nanoTime();
 
-        for (Map.Entry<Oak, String> entry : hashMap.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        hashMap.entrySet().forEach(entry ->
+                System.out.println("  " + entry.getKey() + " -> " + entry.getValue()));
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пар ключ-значення в HashMap");
     }
 
     /**
      * Сортує HashMap за ключами.
-     * Використовує Collections.sort() з природним порядком Oak (Oak.compareTo())
+     * Використовує потік пар, відсортований за природним порядком Oak (Oak.compareTo()),
      * і перезаписує hashMap новою HashMap, заповненою у відсортованому порядку.
      *
      * <p>Увага: HashMap не зберігає порядок додавання, тому після сортування порядок
@@ -198,18 +190,21 @@ public class BasicDataOperationsUsingMap {
     private void sortHashMap() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список ключів і сортуємо за природним порядком Oak
-        List<Oak> sortedKeys = new ArrayList<>(hashMap.keySet());
-        Collections.sort(sortedKeys);
-
-        // Створюємо нову HashMap і додаємо пари у порядку відсортованих ключів
-        HashMap<Oak, String> sortedHashMap = new HashMap<>();
-        for (Oak key : sortedKeys) {
-            sortedHashMap.put(key, hashMap.get(key));
-        }
-
-        // Перезаписуємо оригінальну hashMap
-        hashMap = sortedHashMap;
+        // 1) entrySet().stream() - перетворюємо пари ключ-значення в потік
+        // 2) sorted(Map.Entry.comparingByKey()) - сортуємо за ключами: Oak.compareTo()
+        // 3) collect(Collectors.toMap(...)) - збираємо відсортовані пари в нову HashMap:
+        //    - Map.Entry::getKey - екстрактор ключа
+        //    - Map.Entry::getValue - екстрактор значення
+        //    - (e1, e2) -> e1 - функція злиття для однакових ключів (береться перше значення)
+        //    - HashMap::new - конструктор Map, у яку збирається результат
+        hashMap = hashMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        HashMap::new
+                ));
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування HashMap за ключами");
     }
@@ -235,33 +230,26 @@ public class BasicDataOperationsUsingMap {
 
     /**
      * Здійснює пошук елемента за значенням в HashMap.
-     * Сортує список Map.Entry за значеннями та використовує бінарний пошук.
+     * Перебирає потік пар Map.Entry і повертає першу пару із заданим значенням.
      */
     void findByValueInHashMap() {
         long timeStart = System.nanoTime();
 
-        // Створюємо список пар та сортуємо його за значеннями
-        List<Map.Entry<Oak, String>> entries = new ArrayList<>(hashMap.entrySet());
-        Collections.sort(entries, CUSTOM_COMPARATOR);
+        // filter() залишає пари із заданим значенням, findFirst() повертає першу з них
+        Optional<Map.Entry<Oak, String>> foundEntry = hashMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .findFirst();
 
-        // Тимчасова пара для пошуку: ключ не потрібен, порівнюється лише значення
-        Map.Entry<Oak, String> searchEntry = new AbstractMap.SimpleEntry<>(null, VALUE_TO_SEARCH_AND_DELETE);
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в HashMap");
 
-        int position = Collections.binarySearch(entries, searchEntry, CUSTOM_COMPARATOR);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в HashMap");
-
-        if (position >= 0) {
-            Map.Entry<Oak, String> foundEntry = entries.get(position);
-            System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Дуб: " + foundEntry.getKey());
-        } else {
-            System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в HashMap.");
-        }
+        foundEntry.ifPresentOrElse(
+                entry -> System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Дуб: " + entry.getKey()),
+                () -> System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в HashMap."));
     }
 
     /**
      * Визначає найменший і найбільший ключі в HashMap.
-     * HashMap не зберігає порядок ключів, тому потрібен перебір усіх ключів - O(n),
+     * HashMap не зберігає порядок ключів, тому потрібен перебір усіх ключів потоком - O(n),
      * і сортування HashMap цього не змінює.
      */
     void findMinMaxKeyInHashMap() {
@@ -272,8 +260,8 @@ public class BasicDataOperationsUsingMap {
 
         long timeStart = System.nanoTime();
 
-        Oak minKey = Collections.min(hashMap.keySet());
-        Oak maxKey = Collections.max(hashMap.keySet());
+        Oak minKey = hashMap.keySet().stream().min(Oak::compareTo).orElseThrow();
+        Oak maxKey = hashMap.keySet().stream().max(Oak::compareTo).orElseThrow();
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення найменшого й найбільшого ключа в HashMap");
 
@@ -316,16 +304,14 @@ public class BasicDataOperationsUsingMap {
     void removeByValueFromHashMap() {
         long timeStart = System.nanoTime();
 
-        List<Oak> keysToRemove = new ArrayList<>();
-        for (Map.Entry<Oak, String> entry : hashMap.entrySet()) {
-            if (VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue())) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        // спочатку збираємо ключі пар із заданим значенням у список,
+        // потім видаляємо їх: змінювати Map під час обходу її потоку не можна
+        List<Oak> keysToRemove = hashMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
 
-        for (Oak key : keysToRemove) {
-            hashMap.remove(key);
-        }
+        keysToRemove.forEach(hashMap::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з HashMap");
 
@@ -342,9 +328,8 @@ public class BasicDataOperationsUsingMap {
         System.out.println("\n=== Пари ключ-значення в TreeMap ===");
         long timeStart = System.nanoTime();
 
-        for (Map.Entry<Oak, String> entry : treeMap.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        treeMap.entrySet().forEach(entry ->
+                System.out.println("  " + entry.getKey() + " -> " + entry.getValue()));
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пар ключ-значення в TreeMap");
     }
@@ -370,26 +355,21 @@ public class BasicDataOperationsUsingMap {
 
     /**
      * Здійснює пошук елемента за значенням в TreeMap.
-     * Сортує список Map.Entry за значеннями та використовує бінарний пошук.
+     * Перебирає потік пар Map.Entry і повертає першу пару із заданим значенням.
      */
     void findByValueInTreeMap() {
         long timeStart = System.nanoTime();
 
-        List<Map.Entry<Oak, String>> entries = new ArrayList<>(treeMap.entrySet());
-        Collections.sort(entries, CUSTOM_COMPARATOR);
+        // filter() залишає пари із заданим значенням, findFirst() повертає першу з них
+        Optional<Map.Entry<Oak, String>> foundEntry = treeMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .findFirst();
 
-        Map.Entry<Oak, String> searchEntry = new AbstractMap.SimpleEntry<>(null, VALUE_TO_SEARCH_AND_DELETE);
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в TreeMap");
 
-        int position = Collections.binarySearch(entries, searchEntry, CUSTOM_COMPARATOR);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в TreeMap");
-
-        if (position >= 0) {
-            Map.Entry<Oak, String> foundEntry = entries.get(position);
-            System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Дуб: " + foundEntry.getKey());
-        } else {
-            System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в TreeMap.");
-        }
+        foundEntry.ifPresentOrElse(
+                entry -> System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Дуб: " + entry.getKey()),
+                () -> System.out.println("Місце зростання '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в TreeMap."));
     }
 
     /**
@@ -449,16 +429,14 @@ public class BasicDataOperationsUsingMap {
     void removeByValueFromTreeMap() {
         long timeStart = System.nanoTime();
 
-        List<Oak> keysToRemove = new ArrayList<>();
-        for (Map.Entry<Oak, String> entry : treeMap.entrySet()) {
-            if (VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue())) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        // спочатку збираємо ключі пар із заданим значенням у список,
+        // потім видаляємо їх: змінювати Map під час обходу її потоку не можна
+        List<Oak> keysToRemove = treeMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
 
-        for (Oak key : keysToRemove) {
-            treeMap.remove(key);
-        }
+        keysToRemove.forEach(treeMap::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з TreeMap");
 

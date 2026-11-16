@@ -1,11 +1,11 @@
 import java.time.LocalDateTime;
 import java.util.Queue;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.PriorityQueue;
 
 /**
- * Клас BasicDataOperationsUsingQueue реалізує роботу з колекціями типу Queue для LocalDateTime.
+ * Клас BasicDataOperationsUsingQueue реалізує роботу з колекціями типу Queue для LocalDateTime
+ * з використанням лямбда-виразів і Stream API.
  *
  * <p>Основні функції класу:</p>
  * <ul>
@@ -43,8 +43,9 @@ public class BasicDataOperationsUsingQueue {
 
         // зберігаємо до файлу відсортовані значення з PriorityQueue (з повторами);
         // порядок обходу черги не є відсортованим, тому сортуємо копію її вмісту
-        LocalDateTime[] sortedQueueValues = dateTimeQueue.toArray(new LocalDateTime[0]);
-        Arrays.sort(sortedQueueValues);
+        LocalDateTime[] sortedQueueValues = dateTimeQueue.stream()
+                .sorted()
+                .toArray(LocalDateTime[]::new);
         DataFileHandler.writeArrayToFile(sortedQueueValues, BasicDataOperations.SORTED_FILE_PREFIX + ".queue.data");
 
         // Вилучення виконуємо після пошуку і запису файлу, щоб вони працювали з повним складом черги.
@@ -55,16 +56,16 @@ public class BasicDataOperationsUsingQueue {
      * Здійснює пошук конкретного значення в черзі дати та часу.
      */
     private void findInQueue() {
-        // натозву операції будуємо до заміру, щоб склеювання рядка не потрапило у вимір
+        // назву операції будуємо до заміру, щоб склеювання рядка не потрапило у вимір
         String operationName = "пошук елемента '" + dateTimeValueToSearch + "' в PriorityQueue<LocalDateTime>";
         // вимірюємо час пошуку в черзі
         long timeStart = System.nanoTime();
 
-        // PriorityQueue зберігає елементи як бінарну купу в масиві: кожен батьківський елемент
-        // не більший за своїх нащадків, але між «сусідніми» гілками порядку немає.
-        // Тому бінарний пошук неможливий, і contains() перебирає внутрішній масив від початку
-        // й порівнює кожен елемент через equals(), доки не знайде збіг. Це лінійний пошук, O(n).
-        boolean elementExists = this.dateTimeQueue.contains(dateTimeValueToSearch);
+        // PriorityQueue зберігає елементи як бінарну купу в масиві, тому бінарний пошук
+        // неможливий. anyMatch() перебирає елементи потоку, доки предикат не поверне true:
+        // це лінійний пошук, O(n), як і в методі contains().
+        boolean elementExists = dateTimeQueue.stream()
+                .anyMatch(dateTime -> dateTime.equals(dateTimeValueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
 
@@ -87,13 +88,15 @@ public class BasicDataOperationsUsingQueue {
         // відстежуємо час пошуку граничних значень
         long timeStart = System.nanoTime();
 
-        // Collections.min() і Collections.max() обходять усі елементи черги ітератором
-        // і порівнюють їх через compareTo(), тому кожен виклик займає O(n).
-        // Найменший елемент купи завжди лежить у її корені, тож його можна було б отримати
-        // через peek() за O(1). Найбільший може бути в будь-якому листку купи, тому
-        // для максимуму без повного перегляду не обійтися.
-        LocalDateTime minValue = Collections.min(dateTimeQueue);
-        LocalDateTime maxValue = Collections.max(dateTimeQueue);
+        // min() і max() - термінальні операції: кожна обходить увесь потік і порівнює
+        // елементи через compareTo(), O(n). Результат - Optional<LocalDateTime>;
+        // черга не порожня, тому значення є.
+        LocalDateTime minValue = dateTimeQueue.stream()
+                .min(LocalDateTime::compareTo)
+                .orElseThrow();
+        LocalDateTime maxValue = dateTimeQueue.stream()
+                .max(LocalDateTime::compareTo)
+                .orElseThrow();
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мiнiмальної i максимальної дати в PriorityQueue<LocalDateTime>");
 
