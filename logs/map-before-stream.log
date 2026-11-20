@@ -1,0 +1,97 @@
+========= Операції з HashMap =========
+Початковий розмір HashMap: 10
+
+========= Тривалість операції 'пошук за ключем в HashMap': 429251 нс =========
+Елемент з ключем 'CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}' знайдено. Садівник (садівниця): Костянтин
+
+========= Тривалість операції 'бінарний пошук за значенням в HashMap': 447383 нс =========
+Садівник (садівниця) 'Лідія' знайдено. Вишня: CherryTree{variety='Чудо-вишня', frostResistance=-25, hashCode=-434027622}
+
+========= Тривалість операції 'визначення найменшого й найбільшого ключа в HashMap': 86652 нс =========
+Найменший ключ: CherryTree{variety='Шпанка', frostResistance=-30, hashCode=1489638280}, найбільший ключ: CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}
+
+=== Пари ключ-значення в HashMap ===
+  CherryTree{variety='Тургенівка', frostResistance=-31, hashCode=-827135213} -> Інна
+  CherryTree{variety='Шпанка', frostResistance=-30, hashCode=1489638280} -> Лідія
+  CherryTree{variety='Норд Стар', frostResistance=-40, hashCode=333368188} -> Марина
+  CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907} -> Костянтин
+  CherryTree{variety='Любська', frostResistance=-26, hashCode=-1786994905} -> Ігнат
+  CherryTree{variety='Мелітопольська десертна', frostResistance=-24, hashCode=1057236255} -> Данило
+  CherryTree{variety='Чудо-вишня', frostResistance=-25, hashCode=-434027622} -> Лідія
+  CherryTree{variety='Молодіжна', frostResistance=-33, hashCode=563530525} -> Світлана
+  CherryTree{variety='Шпанка', frostResistance=-32, hashCode=1489638278} -> Арсен
+  CherryTree{variety='Тургенівка', frostResistance=-35, hashCode=-827135217} -> Емілія
+
+========= Тривалість операції 'виведення пар ключ-значення в HashMap': 3085764 нс =========
+
+========= Тривалість операції 'сортування HashMap за ключами': 341602 нс =========
+
+=== Пари ключ-значення в HashMap ===
+  CherryTree{variety='Тургенівка', frostResistance=-31, hashCode=-827135213} -> Інна
+  CherryTree{variety='Шпанка', frostResistance=-30, hashCode=1489638280} -> Лідія
+  CherryTree{variety='Норд Стар', frostResistance=-40, hashCode=333368188} -> Марина
+  CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907} -> Костянтин
+  CherryTree{variety='Чудо-вишня', frostResistance=-25, hashCode=-434027622} -> Лідія
+  CherryTree{variety='Молодіжна', frostResistance=-33, hashCode=563530525} -> Світлана
+  CherryTree{variety='Мелітопольська десертна', frostResistance=-24, hashCode=1057236255} -> Данило
+  CherryTree{variety='Любська', frostResistance=-26, hashCode=-1786994905} -> Ігнат
+  CherryTree{variety='Шпанка', frostResistance=-32, hashCode=1489638278} -> Арсен
+  CherryTree{variety='Тургенівка', frostResistance=-35, hashCode=-827135217} -> Емілія
+
+========= Тривалість операції 'виведення пар ключ-значення в HashMap': 1398804 нс =========
+
+========= Тривалість операції 'пошук за ключем в HashMap': 28560 нс =========
+Елемент з ключем 'CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}' знайдено. Садівник (садівниця): Костянтин
+
+========= Тривалість операції 'бінарний пошук за значенням в HashMap': 66234 нс =========
+Садівник (садівниця) 'Лідія' знайдено. Вишня: CherryTree{variety='Чудо-вишня', frostResistance=-25, hashCode=-434027622}
+
+========= Тривалість операції 'визначення найменшого й найбільшого ключа в HashMap': 36738 нс =========
+Найменший ключ: CherryTree{variety='Шпанка', frostResistance=-30, hashCode=1489638280}, найбільший ключ: CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}
+
+========= Тривалість операції 'додавання запису до HashMap': 23446 нс =========
+Додано новий запис: вишня='CherryTree{variety='Встріча', frostResistance=-29, hashCode=1541017745}', садівник (садівниця)='Захар'
+
+========= Тривалість операції 'видалення за ключем з HashMap': 34387 нс =========
+Видалено запис з ключем 'CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}'. Садівник (садівниця) було: Костянтин
+
+========= Тривалість операції 'видалення за значенням з HashMap': 37107 нс =========
+Видалено 2 записів з садівником (садівницею) 'Лідія'
+Кінцевий розмір HashMap: 8
+
+
+========= Операції з TreeMap =========
+Початковий розмір TreeMap: 10
+
+========= Тривалість операції 'пошук за ключем в TreeMap': 16882 нс =========
+Елемент з ключем 'CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}' знайдено. Садівник (садівниця): Костянтин
+
+========= Тривалість операції 'бінарний пошук за значенням в TreeMap': 80215 нс =========
+Садівник (садівниця) 'Лідія' знайдено. Вишня: CherryTree{variety='Чудо-вишня', frostResistance=-25, hashCode=-434027622}
+
+========= Тривалість операції 'визначення найменшого й найбільшого ключа в TreeMap': 72165 нс =========
+Найменший ключ: CherryTree{variety='Шпанка', frostResistance=-30, hashCode=1489638280}, найбільший ключ: CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}
+
+=== Пари ключ-значення в TreeMap ===
+  CherryTree{variety='Шпанка', frostResistance=-30, hashCode=1489638280} -> Лідія
+  CherryTree{variety='Шпанка', frostResistance=-32, hashCode=1489638278} -> Арсен
+  CherryTree{variety='Чудо-вишня', frostResistance=-25, hashCode=-434027622} -> Лідія
+  CherryTree{variety='Тургенівка', frostResistance=-31, hashCode=-827135213} -> Інна
+  CherryTree{variety='Тургенівка', frostResistance=-35, hashCode=-827135217} -> Емілія
+  CherryTree{variety='Норд Стар', frostResistance=-40, hashCode=333368188} -> Марина
+  CherryTree{variety='Молодіжна', frostResistance=-33, hashCode=563530525} -> Світлана
+  CherryTree{variety='Мелітопольська десертна', frostResistance=-24, hashCode=1057236255} -> Данило
+  CherryTree{variety='Любська', frostResistance=-26, hashCode=-1786994905} -> Ігнат
+  CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907} -> Костянтин
+
+========= Тривалість операції 'виведення пар ключ-значення в TreeMap': 1018174 нс =========
+
+========= Тривалість операції 'додавання запису до TreeMap': 12970 нс =========
+Додано новий запис: вишня='CherryTree{variety='Встріча', frostResistance=-29, hashCode=1541017745}', садівник (садівниця)='Захар'
+
+========= Тривалість операції 'видалення за ключем з TreeMap': 20949 нс =========
+Видалено запис з ключем 'CherryTree{variety='Любська', frostResistance=-28, hashCode=-1786994907}'. Садівник (садівниця) було: Костянтин
+
+========= Тривалість операції 'видалення за значенням з TreeMap': 32574 нс =========
+Видалено 2 записів з садівником (садівницею) 'Лідія'
+Кінцевий розмір TreeMap: 8

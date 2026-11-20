@@ -1,14 +1,12 @@
 /** Варіант 19. Сорт і морозостійкість за спаданням.
  * Адаптовано з chdbc-samples/training-data-26; допомога Codex, перевірено запуском. */
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public class BasicDataOperationsUsingMap {
     private static final CherryTree KEY_TO_SEARCH_AND_DELETE = new CherryTree("Любська", -28);
@@ -16,8 +14,6 @@ public class BasicDataOperationsUsingMap {
 
     private static final String VALUE_TO_SEARCH_AND_DELETE = "Лідія";
     private static final String VALUE_TO_ADD = "Захар";
-
-    private static final Comparator<Map.Entry<CherryTree, String>> CUSTOM_COMPARATOR = Map.Entry.comparingByValue();
 
     private HashMap<CherryTree, String> hashMap;
     private TreeMap<CherryTree, String> treeMap;
@@ -97,9 +93,8 @@ public class BasicDataOperationsUsingMap {
         System.out.println("\n=== Пари ключ-значення в HashMap ===");
         long timeStart = System.nanoTime();
 
-        for (Map.Entry<CherryTree, String> entry : hashMap.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        hashMap.entrySet().forEach(entry ->
+                System.out.println("  " + entry.getKey() + " -> " + entry.getValue()));
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пар ключ-значення в HashMap");
     }
@@ -107,15 +102,18 @@ public class BasicDataOperationsUsingMap {
     private void sortHashMap() {
         long timeStart = System.nanoTime();
 
-        List<CherryTree> sortedKeys = new ArrayList<>(hashMap.keySet());
-        Collections.sort(sortedKeys);
 
-        HashMap<CherryTree, String> sortedHashMap = new HashMap<>();
-        for (CherryTree key : sortedKeys) {
-            sortedHashMap.put(key, hashMap.get(key));
-        }
 
-        hashMap = sortedHashMap;
+
+
+        hashMap = hashMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        HashMap::new
+                ));
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування HashMap за ключами");
     }
@@ -138,21 +136,15 @@ public class BasicDataOperationsUsingMap {
     void findByValueInHashMap() {
         long timeStart = System.nanoTime();
 
-        List<Map.Entry<CherryTree, String>> entries = new ArrayList<>(hashMap.entrySet());
-        Collections.sort(entries, CUSTOM_COMPARATOR);
+        Optional<Map.Entry<CherryTree, String>> foundEntry = hashMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .findFirst();
 
-        Map.Entry<CherryTree, String> searchEntry = new AbstractMap.SimpleEntry<>(null, VALUE_TO_SEARCH_AND_DELETE);
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в HashMap");
 
-        int position = Collections.binarySearch(entries, searchEntry, CUSTOM_COMPARATOR);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в HashMap");
-
-        if (position >= 0) {
-            Map.Entry<CherryTree, String> foundEntry = entries.get(position);
-            System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Вишня: " + foundEntry.getKey());
-        } else {
-            System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в HashMap.");
-        }
+        foundEntry.ifPresentOrElse(
+                entry -> System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Вишня: " + entry.getKey()),
+                () -> System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в HashMap."));
     }
 
     void findMinMaxKeyInHashMap() {
@@ -163,8 +155,8 @@ public class BasicDataOperationsUsingMap {
 
         long timeStart = System.nanoTime();
 
-        CherryTree minKey = Collections.min(hashMap.keySet());
-        CherryTree maxKey = Collections.max(hashMap.keySet());
+        CherryTree minKey = hashMap.keySet().stream().min(CherryTree::compareTo).orElseThrow();
+        CherryTree maxKey = hashMap.keySet().stream().max(CherryTree::compareTo).orElseThrow();
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення найменшого й найбільшого ключа в HashMap");
 
@@ -198,16 +190,12 @@ public class BasicDataOperationsUsingMap {
     void removeByValueFromHashMap() {
         long timeStart = System.nanoTime();
 
-        List<CherryTree> keysToRemove = new ArrayList<>();
-        for (Map.Entry<CherryTree, String> entry : hashMap.entrySet()) {
-            if (VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue())) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        List<CherryTree> keysToRemove = hashMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
 
-        for (CherryTree key : keysToRemove) {
-            hashMap.remove(key);
-        }
+        keysToRemove.forEach(hashMap::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з HashMap");
 
@@ -219,9 +207,8 @@ public class BasicDataOperationsUsingMap {
         System.out.println("\n=== Пари ключ-значення в TreeMap ===");
         long timeStart = System.nanoTime();
 
-        for (Map.Entry<CherryTree, String> entry : treeMap.entrySet()) {
-            System.out.println("  " + entry.getKey() + " -> " + entry.getValue());
-        }
+        treeMap.entrySet().forEach(entry ->
+                System.out.println("  " + entry.getKey() + " -> " + entry.getValue()));
 
         PerformanceTracker.displayOperationTime(timeStart, "виведення пар ключ-значення в TreeMap");
     }
@@ -244,21 +231,15 @@ public class BasicDataOperationsUsingMap {
     void findByValueInTreeMap() {
         long timeStart = System.nanoTime();
 
-        List<Map.Entry<CherryTree, String>> entries = new ArrayList<>(treeMap.entrySet());
-        Collections.sort(entries, CUSTOM_COMPARATOR);
+        Optional<Map.Entry<CherryTree, String>> foundEntry = treeMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .findFirst();
 
-        Map.Entry<CherryTree, String> searchEntry = new AbstractMap.SimpleEntry<>(null, VALUE_TO_SEARCH_AND_DELETE);
+        PerformanceTracker.displayOperationTime(timeStart, "пошук за значенням в TreeMap");
 
-        int position = Collections.binarySearch(entries, searchEntry, CUSTOM_COMPARATOR);
-
-        PerformanceTracker.displayOperationTime(timeStart, "бінарний пошук за значенням в TreeMap");
-
-        if (position >= 0) {
-            Map.Entry<CherryTree, String> foundEntry = entries.get(position);
-            System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Вишня: " + foundEntry.getKey());
-        } else {
-            System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в TreeMap.");
-        }
+        foundEntry.ifPresentOrElse(
+                entry -> System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' знайдено. Вишня: " + entry.getKey()),
+                () -> System.out.println("Садівник (садівниця) '" + VALUE_TO_SEARCH_AND_DELETE + "' відсутнє в TreeMap."));
     }
 
     void findMinMaxKeyInTreeMap() {
@@ -304,16 +285,12 @@ public class BasicDataOperationsUsingMap {
     void removeByValueFromTreeMap() {
         long timeStart = System.nanoTime();
 
-        List<CherryTree> keysToRemove = new ArrayList<>();
-        for (Map.Entry<CherryTree, String> entry : treeMap.entrySet()) {
-            if (VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue())) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+        List<CherryTree> keysToRemove = treeMap.entrySet().stream()
+                .filter(entry -> VALUE_TO_SEARCH_AND_DELETE.equals(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .toList();
 
-        for (CherryTree key : keysToRemove) {
-            treeMap.remove(key);
-        }
+        keysToRemove.forEach(treeMap::remove);
 
         PerformanceTracker.displayOperationTime(timeStart, "видалення за значенням з TreeMap");
 

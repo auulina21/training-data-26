@@ -2,6 +2,8 @@ import java.util.Vector;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BasicDataOperationsUsingList {
     private boolean listSorted = false;
@@ -48,7 +50,9 @@ public class BasicDataOperationsUsingList {
     void performArraySorting() {
         long timeStart = System.nanoTime();
 
-        Arrays.sort(valueArray);
+        valueArray = Arrays.stream(valueArray)
+                .sorted()
+                .toArray(Integer[]::new);
         arraySorted = true;
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування масиву Integer[]");
@@ -59,16 +63,15 @@ public class BasicDataOperationsUsingList {
         String operationName = "пошук елемента '" + valueToSearch + "' в масивi Integer[], " + (arraySorted ? "після сортування" : "до сортування");
         long timeStart = System.nanoTime();
 
-        int position = -1;
+        int position;
         if (arraySorted) {
             position = Arrays.binarySearch(valueArray, valueToSearch);
         } else {
-            for (int i = 0; i < valueArray.length; i++) {
-                if (valueArray[i].compareTo(valueToSearch) == 0) {
-                    position = i;
-                    break;
-                }
-            }
+
+            position = IntStream.range(0, valueArray.length)
+                    .filter(index -> valueArray[index].compareTo(valueToSearch) == 0)
+                    .findFirst()
+                    .orElse(-1);
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -89,21 +92,21 @@ public class BasicDataOperationsUsingList {
         String operationName = "визначення мінімального і максимального значення в масивi Integer[], " + (arraySorted ? "після сортування" : "до сортування");
         long timeStart = System.nanoTime();
 
-        Integer minValue = valueArray[0];
-        Integer maxValue = valueArray[0];
+        Integer minValue;
+        Integer maxValue;
 
         if (arraySorted) {
 
+            minValue = valueArray[0];
             maxValue = valueArray[valueArray.length - 1];
         } else {
-            for (Integer currentValue : valueArray) {
-                if (currentValue.compareTo(minValue) < 0) {
-                    minValue = currentValue;
-                }
-                if (currentValue.compareTo(maxValue) > 0) {
-                    maxValue = currentValue;
-                }
-            }
+
+            minValue = Arrays.stream(valueArray)
+                    .min(Integer::compareTo)
+                    .orElseThrow();
+            maxValue = Arrays.stream(valueArray)
+                    .max(Integer::compareTo)
+                    .orElseThrow();
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -117,18 +120,15 @@ public class BasicDataOperationsUsingList {
         String operationName = "пошук елемента '" + valueToSearch + "' в Vector<Integer>, " + (listSorted ? "після сортування" : "до сортування");
         long timeStart = System.nanoTime();
 
-        int position = -1;
+        int position;
         if (listSorted) {
             position = Collections.binarySearch(valueList, valueToSearch);
         } else {
-            int index = 0;
-            for (Integer value : valueList) {
-                if (value.compareTo(valueToSearch) == 0) {
-                    position = index;
-                    break;
-                }
-                index++;
-            }
+
+            long elementsBeforeMatch = valueList.stream()
+                    .takeWhile(dateTime -> dateTime.compareTo(valueToSearch) != 0)
+                    .count();
+            position = elementsBeforeMatch < valueList.size() ? (int) elementsBeforeMatch : -1;
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -157,8 +157,13 @@ public class BasicDataOperationsUsingList {
             minValue = valueList.get(0);
             maxValue = valueList.get(valueList.size() - 1);
         } else {
-            minValue = Collections.min(valueList);
-            maxValue = Collections.max(valueList);
+
+            minValue = valueList.stream()
+                    .min(Integer::compareTo)
+                    .orElseThrow();
+            maxValue = valueList.stream()
+                    .max(Integer::compareTo)
+                    .orElseThrow();
         }
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
@@ -170,7 +175,9 @@ public class BasicDataOperationsUsingList {
     void sortList() {
         long timeStart = System.nanoTime();
 
-        Collections.sort(valueList);
+        valueList = valueList.stream()
+                .sorted()
+                .collect(Collectors.toCollection(Vector::new));
         listSorted = true;
 
         PerformanceTracker.displayOperationTime(timeStart, "сортування Vector<Integer>");
@@ -182,17 +189,15 @@ public class BasicDataOperationsUsingList {
         System.out.println("масив Integer[]: вибірка даних " + phase + ". Умова: " + conditionDescription);
         String operationName = "вибірка даних: масив Integer[], " + phase + ", умова: " + conditionDescription;
         long timeStart = System.nanoTime();
-        Integer[] matches = new Integer[values.length];
-        int count = 0;
-        int inspected = 0;
-        for (Integer value : values) {
-            inspected++;
-            if (sorted && value >= threshold) break;
-            if (value < threshold) matches[count++] = value;
+        Integer[] matches;
+        if (!sorted) {
+            matches = Arrays.stream(values).filter(value -> value < threshold).toArray(Integer[]::new);
+        } else {
+            matches = Arrays.stream(values).takeWhile(value -> value < threshold).toArray(Integer[]::new);
         }
         PerformanceTracker.displayOperationTime(timeStart, operationName);
-        System.out.println("Переглянуто елементів: " + inspected);
-        for (int i = 0; i < count; i++) System.out.println(matches[i]);
+        Arrays.stream(matches).forEach(System.out::println);
+        int count = matches.length;
         System.out.println("У масиві знайдено " + count + " входжень (повтори враховано). Умова: " + conditionDescription + ".");
         return count;
     }
@@ -203,19 +208,15 @@ public class BasicDataOperationsUsingList {
         System.out.println("Vector<Integer>: вибірка даних " + phase + ". Умова: " + conditionDescription);
         String operationName = "вибірка даних: Vector<Integer>, " + phase + ", умова: " + conditionDescription;
         long timeStart = System.nanoTime();
-        Integer[] matches = new Integer[values.size()];
-        int count = 0;
-        int inspected = 0;
-        java.util.ListIterator<Integer> cursor = values.listIterator();
-        while (cursor.hasNext()) {
-            Integer value = cursor.next();
-            inspected++;
-            if (sorted && value >= threshold) break;
-            if (value < threshold) matches[count++] = value;
+        List<Integer> matches;
+        if (!sorted) {
+            matches = values.stream().filter(value -> value < threshold).toList();
+        } else {
+            matches = values.stream().takeWhile(value -> value < threshold).toList();
         }
         PerformanceTracker.displayOperationTime(timeStart, operationName);
-        System.out.println("Переглянуто елементів: " + inspected);
-        for (int i = 0; i < count; i++) System.out.println(matches[i]);
+        matches.forEach(System.out::println);
+        int count = matches.size();
         System.out.println("У List знайдено " + count + " входжень (повтори враховано). Умова: " + conditionDescription + ".");
         return count;
     }

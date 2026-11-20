@@ -1,6 +1,5 @@
 import java.util.Queue;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class BasicDataOperationsUsingQueue {
@@ -16,8 +15,9 @@ public class BasicDataOperationsUsingQueue {
         findInQueue();
         locateMinMaxInQueue();
 
-        Integer[] sortedQueueValues = valueQueue.toArray(new Integer[0]);
-        Arrays.sort(sortedQueueValues);
+        Integer[] sortedQueueValues = valueQueue.stream()
+                .sorted()
+                .toArray(Integer[]::new);
         DataFileHandler.writeArrayToFile(sortedQueueValues, BasicDataOperations.SORTED_FILE_PREFIX + ".queue.data");
 
         performQueueOperations();
@@ -30,8 +30,8 @@ public class BasicDataOperationsUsingQueue {
         long timeStart = System.nanoTime();
 
 
-
-        boolean elementExists = this.valueQueue.contains(valueToSearch);
+        boolean elementExists = valueQueue.stream()
+                .anyMatch(dateTime -> dateTime.equals(valueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
 
@@ -51,9 +51,12 @@ public class BasicDataOperationsUsingQueue {
         long timeStart = System.nanoTime();
 
 
-
-        Integer minValue = Collections.min(valueQueue);
-        Integer maxValue = Collections.max(valueQueue);
+        Integer minValue = valueQueue.stream()
+                .min(Integer::compareTo)
+                .orElseThrow();
+        Integer maxValue = valueQueue.stream()
+                .max(Integer::compareTo)
+                .orElseThrow();
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мінімального і максимального значення в ConcurrentLinkedQueue<Integer>");
 

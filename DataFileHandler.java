@@ -2,30 +2,22 @@
 public class DataFileHandler {
     public static Integer[] loadArrayFromFile(String filePath) throws java.io.IOException {
         var path = java.nio.file.Path.of(filePath);
-        java.util.List<Integer> values = new java.util.ArrayList<>();
         try (var reader = java.nio.file.Files.newBufferedReader(path, java.nio.charset.StandardCharsets.UTF_8)) {
-            String line;
-            int lineNumber = 0;
-            while ((line = reader.readLine()) != null) {
-                lineNumber++;
-                line = line.trim();
-                if (lineNumber == 1 && line.startsWith("\uFEFF")) line = line.substring(1);
-                if (line.isEmpty()) continue;
-                try {
-                    values.add(Integer.valueOf(line));
-                } catch (NumberFormatException exception) {
-                    throw new java.io.IOException("Некоректне Integer у рядку " + lineNumber + " файлу " + filePath, exception);
-                }
-            }
+            return reader.lines()
+                .map(line -> line.trim().replaceFirst("^\\uFEFF", ""))
+                .filter(line -> !line.isEmpty())
+                .map(Integer::valueOf)
+                .toArray(Integer[]::new);
+        } catch (RuntimeException exception) {
+            throw new java.io.IOException("Некоректні дані у файлі " + filePath, exception);
         }
-        return values.toArray(new Integer[0]);
     }
     public static void writeArrayToFile(Integer[] values, String filePath) {
         try (var writer = java.nio.file.Files.newBufferedWriter(java.nio.file.Path.of(filePath), java.nio.charset.StandardCharsets.UTF_8)) {
-            for (Integer value : values) {
-                writer.write(value.toString());
-                writer.newLine();
-            }
+            String content = java.util.Arrays.stream(values).map(String::valueOf)
+                .collect(java.util.stream.Collectors.joining(System.lineSeparator()));
+            writer.write(content);
+            if (values.length > 0) writer.newLine();
         } catch (java.io.IOException exception) {
             throw new java.io.UncheckedIOException("Не вдалося записати " + filePath, exception);
         }

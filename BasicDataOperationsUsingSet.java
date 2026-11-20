@@ -1,5 +1,4 @@
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -19,8 +18,9 @@ public class BasicDataOperationsUsingSet {
         locateMinMaxInSet();
         analyzeDuplicates();
 
-        Integer[] sortedSetValues = valueSet.toArray(new Integer[0]);
-        Arrays.sort(sortedSetValues);
+        Integer[] sortedSetValues = valueSet.stream()
+                .sorted()
+                .toArray(Integer[]::new);
         DataFileHandler.writeArrayToFile(sortedSetValues, BasicDataOperations.SORTED_FILE_PREFIX + ".set.data");
     }
 
@@ -29,9 +29,8 @@ public class BasicDataOperationsUsingSet {
         String operationName = "пошук елемента '" + valueToSearch + "' в LinkedHashSet<Integer>";
         long timeStart = System.nanoTime();
 
-
-
-        boolean elementExists = this.valueSet.contains(valueToSearch);
+        boolean elementExists = valueSet.stream()
+                .anyMatch(dateTime -> dateTime.equals(valueToSearch));
 
         PerformanceTracker.displayOperationTime(timeStart, operationName);
 
@@ -51,8 +50,13 @@ public class BasicDataOperationsUsingSet {
         long timeStart = System.nanoTime();
 
 
-        Integer minValue = Collections.min(valueSet);
-        Integer maxValue = Collections.max(valueSet);
+
+        Integer minValue = valueSet.stream()
+                .min(Integer::compareTo)
+                .orElseThrow();
+        Integer maxValue = valueSet.stream()
+                .max(Integer::compareTo)
+                .orElseThrow();
 
         PerformanceTracker.displayOperationTime(timeStart, "визначення мінімального і максимального значення в LinkedHashSet<Integer>");
 
